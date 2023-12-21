@@ -1,6 +1,8 @@
 import random
 import importlib
 import json
+from IA.IA_1 import IA_ESNW
+from IA.IA_2 import IA_ESNW
 
 #mettre à False pour arrêter l'affichage dans le terminal
 RAPPORT = True
@@ -20,13 +22,14 @@ COOLDOWN_FACTOR = 10
 # servant à simplement à stocker les infos en cours de jeu
 ##############################################################################
 
-class Coder:
+class Coder():
     def __init__(self):
         self.position = JC
         self.level = 1
         self.energy = 1
         self.max_energy = 1
         self.bitcoins = 0
+        
 
 class Mission:
     def __init__(self, position, starting_workload, workload, difficulty, cooldown = 0):
@@ -47,15 +50,39 @@ class Game:
         self.coders = [Coder() for i in range(nb_joueurs)]
         self.missions = missions
         self.actions = []
+        
     
     def missions_positions(self):
         return {m.position : m for m in self.missions}
 
     def coders_positions(self):
         return {c.position : c for c in self.coders}
+    
 
     def to_dict(self):
-        return {'coders':[c.__dict__ for c in self.coders], 'missions':[m.__dict__ for m in self.missions], 'actions': self.actions}
+        """Retourne le dictionnaire représentant l'état actuel du jeu"""
+
+        # Ajout de 'symbol' à chaque mission en utilisant une expression dict
+        missions_info = [
+            {**m.__dict__, 'symbol': f'M{i+1}'} for i, m in enumerate(self.missions)
+        ]
+
+        # Ajout de 'symbol' pour chaque joueur en utilisant une expression dict
+        coders_info = [
+            {**c.__dict__, 'symbol': f'C{i+1}'} for i, c in enumerate(self.coders)
+        ]
+        
+
+
+        # Construction du dictionnaire représentant l'état actuel du jeu
+        game_dict = {
+            'coders': coders_info,
+            'missions': missions_info,
+            'actions': self.actions,
+        }
+
+        return game_dict
+
 
 ##############################################################################
 # Fonctions auxilaires
@@ -89,6 +116,12 @@ def load_IAs(player_names : list, game : Game):
 def get_player_action(num_player : int, IAs : list, game: Game):
     ia = IAs[num_player]
     return ia.action(game.to_dict())
+
+
+
+def get_missions_proches(num_player : int, IAs : list, game: Game):
+    ia = IAs[num_player]
+    return ia.get_mission_distance()
 
 ##############################################################################
 # Fonctions Logiques des règles du jeu
@@ -245,20 +278,23 @@ def partie(player_names : list, missions_file : str):
     IAs = load_IAs(player_names, game)
     game_over = False
     num_current_player = 0
-
     if RAPPORT:
         print("Début de partie avec", nb_players, "coders")
         print("nom des IAs :", player_names)
 
     history = [game.to_dict()]
 
-    
+
+
     while not game_over:
         if RAPPORT:
             print("\n"+"*"* 20 + "\nDébut tour", len(history), "codeur :", num_current_player)
             print(game.to_dict())
         update_cooldowns(missions)
         action = get_player_action(num_current_player, IAs, game)
+        liste_mission_plus_proche = get_missions_proches(num_current_player, IAs, game)
+        print(liste_mission_plus_proche)
+
         if RAPPORT:
             print("Action choisie", action)
         game.actions.append(action)
@@ -277,5 +313,6 @@ def partie(player_names : list, missions_file : str):
         print("Scores de fin de partie")
         for i in range(nb_players):
             print("Coder",i,":",game.coders[i].bitcoins)
+        
 
         
