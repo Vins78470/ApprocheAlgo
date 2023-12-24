@@ -1,6 +1,7 @@
 import random
 import importlib
 import json
+from tkinter.colorchooser import Chooser
 from IA.IA_1 import IA_ESNW
 from IA.IA_2 import IA_ESNW
 
@@ -109,7 +110,7 @@ def load_IAs(player_names : list, game : Game):
 
     for i in range(len(player_names)):
         imp = importlib.import_module("IA." + player_names[i])
-        list_ia.append(imp.IA_ESNW(i, game.to_dict() ) )
+        list_ia.append(imp.IA_ESNW(i, game.to_dict()))
 
     return list_ia
 
@@ -117,7 +118,9 @@ def get_player_action(num_player : int, IAs : list, game: Game):
     ia = IAs[num_player]
     return ia.action(game.to_dict())
 
-
+def GetNextPosition(num_player : int, IAs : list, game: Game):
+    ia = IAs[num_player]
+    return ia.chooseNextPosition()
 
 def get_missions_proches(num_player : int, IAs : list, game: Game):
     ia = IAs[num_player]
@@ -284,15 +287,15 @@ def partie(player_names : list, missions_file : str):
 
     history = [game.to_dict()]
 
-
-
     while not game_over:
         if RAPPORT:
             print("\n"+"*"* 20 + "\nDébut tour", len(history), "codeur :", num_current_player)
             print(game.to_dict())
         update_cooldowns(missions)
+
         action = get_player_action(num_current_player, IAs, game)
         liste_mission_plus_proche = get_missions_proches(num_current_player, IAs, game)
+        print(GetNextPosition(num_current_player, IAs, game))
         print(liste_mission_plus_proche)
 
         if RAPPORT:
