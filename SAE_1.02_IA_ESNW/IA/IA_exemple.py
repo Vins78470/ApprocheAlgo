@@ -28,7 +28,6 @@ class IA_ESNW:
         print("Infos joueur : " +str(self.mon_numero) + str(self.game_dic['coders'][self.mon_numero]))
 
     def CalculDistanceEntreJoueurEtMissions(self):
-            
             self.liste_distance = []
             PositionJoueurActuelle = self.game_dic['coders'][self.mon_numero]['position']
             joueur_x,joueur_y = PositionJoueurActuelle
@@ -39,7 +38,7 @@ class IA_ESNW:
     
     def ChoisisMeilleurMission(self):
         meilleur_mission = min(self.liste_distance)
-        print(meilleur_mission)
+        return meilleur_mission
     
     def GetPositionMissionLaPlusProche(self):
         index_mission_proche = self.liste_distance.index(min(self.liste_distance))
@@ -53,11 +52,16 @@ class IA_ESNW:
         mission_x,mission_y = self.GetPositionMissionLaPlusProche()
         x_deplacement = mission_x - joueur_x
         y_deplacement = mission_y - joueur_y
-        norme_vecteur = math.sqrt(x_deplacement**2 + y_deplacement**2) # On normalise le vecteur pour avoir un deplacement de 1 en 1.
-        norme_vecteur=int(norme_vecteur)
-
-        x_deplacement_normalise = int(x_deplacement / norme_vecteur)
-        y_deplacement_normalise =int(y_deplacement / norme_vecteur)
+        #norme_vecteur = math.sqrt(x_deplacement**2 + y_deplacement**2) # On normalise le vecteur pour avoir un deplacement de 1 en 1.
+        #norme_vecteur = int(norme_vecteur)
+        
+        if abs(x_deplacement) > abs(y_deplacement):
+            x_deplacement_normalise = int(x_deplacement / abs(x_deplacement))
+            y_deplacement_normalise = 0
+        else:
+            x_deplacement_normalise = 0
+            y_deplacement_normalise = int(y_deplacement / abs(y_deplacement))
+        
         print(x_deplacement_normalise,y_deplacement_normalise)
         return x_deplacement_normalise,y_deplacement_normalise
 
@@ -65,7 +69,41 @@ class IA_ESNW:
         for key,value in DIRECTIONS.items():
             if value == prochain_coup:
                 return key
+   
+    def checkEnergyNull(self):
+      if self.game_dic['coders'][self.mon_numero]['energy']<= 0:
+          return True
+    """
+    def RetournerAuJobCenter(self):
+        job_center_position = (0, 0)  # Position du job center (à adapter)
 
+        # Vérifie si l'énergie est épuisée
+        if self.game_dic['coders'][self.mon_numero]['energy']<= 0:
+            # Si oui, retourne au job center
+            self.DeplacerCoder(job_center_position)
+        
+    def DeplacerCoder(self, coder, destination):
+        coder_x, coder_y = self.game_dic['coders'][self.mon_numero]['position']
+        dest_x, dest_y = destination
+
+        # Calculer les différences sur chaque axe pour déterminer la direction du déplacement
+        diff_x = dest_x - coder_x
+        diff_y = dest_y - coder_y
+
+        # Effectuer le déplacement en mettant à jour la position du coder
+        if diff_x > 0:
+            coder_x += 1
+        elif diff_x < 0:
+            coder_x -= 1
+
+        if diff_y > 0:
+            coder_y += 1
+        elif diff_y < 0:
+            coder_y -= 1
+
+        # Mettre à jour la position du coder avec les nouveaux déplacements
+        coder.position = (coder_x, coder_y)
+    """
     def action(self, game_dict : dict) -> str:
         """Appelé à chaque décision du joueur IA
 
