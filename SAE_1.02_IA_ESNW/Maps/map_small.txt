@@ -1,0 +1,1 @@
+[{"position": [0, 0], "starting_workload": 3, "workload": 3, "difficulty": 1, "cooldown": 0}, {"position": [2, 1], "starting_workload": 2, "workload": 2, "difficulty": 2, "cooldown": 0}]

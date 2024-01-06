@@ -1,20 +1,17 @@
 import random
 import importlib
 import json
-from tkinter.colorchooser import Chooser
-from IA.IA_1 import IA_ESNW
-from IA.IA_2 import IA_ESNW
 
 #mettre à False pour arrêter l'affichage dans le terminal
 RAPPORT = True
 
 #variables globales constantes
-DIRECTIONS = {'N':(0,-1), 'S':(0,1), 'E':(-1,0), 'W':(1,0)}
+DIRECTIONS = {'N':(0,-1), 'S':(0,1), 'E':(1,0), 'W':(-1,0)}
 JC = (10,10)
 SIZE = 21
 MAX_LEVEL = 10
 OBJECTIVE = 3000
-DURATION = 1000
+DURATION = 50
 COST_UPGRADE = 25
 COOLDOWN_FACTOR = 10
 
@@ -23,14 +20,13 @@ COOLDOWN_FACTOR = 10
 # servant à simplement à stocker les infos en cours de jeu
 ##############################################################################
 
-class Coder():
+class Coder:
     def __init__(self):
         self.position = JC
         self.level = 1
         self.energy = 1
         self.max_energy = 1
         self.bitcoins = 0
-        
 
 class Mission:
     def __init__(self, position, starting_workload, workload, difficulty, cooldown = 0):
@@ -51,39 +47,15 @@ class Game:
         self.coders = [Coder() for i in range(nb_joueurs)]
         self.missions = missions
         self.actions = []
-        
     
     def missions_positions(self):
         return {m.position : m for m in self.missions}
 
     def coders_positions(self):
         return {c.position : c for c in self.coders}
-    
 
     def to_dict(self):
-        """Retourne le dictionnaire représentant l'état actuel du jeu"""
-
-        # Ajout de 'symbol' à chaque mission en utilisant une expression dict
-        missions_info = [
-            {**m.__dict__, 'symbol': f'M{i+1}'} for i, m in enumerate(self.missions)
-        ]
-
-        # Ajout de 'symbol' pour chaque joueur en utilisant une expression dict
-        coders_info = [
-            {**c.__dict__, 'symbol': f'C{i+1}'} for i, c in enumerate(self.coders)
-        ]
-        
-
-
-        # Construction du dictionnaire représentant l'état actuel du jeu
-        game_dict = {
-            'coders': coders_info,
-            'missions': missions_info,
-            'actions': self.actions,
-        }
-
-        return game_dict
-
+        return {'coders':[c.__dict__ for c in self.coders], 'missions':[m.__dict__ for m in self.missions], 'actions': self.actions}
 
 ##############################################################################
 # Fonctions auxilaires
@@ -110,21 +82,13 @@ def load_IAs(player_names : list, game : Game):
 
     for i in range(len(player_names)):
         imp = importlib.import_module("IA." + player_names[i])
-        list_ia.append(imp.IA_ESNW(i, game.to_dict()))
+        list_ia.append(imp.IA_ESNW(i, game.to_dict() ) )
 
     return list_ia
 
 def get_player_action(num_player : int, IAs : list, game: Game):
     ia = IAs[num_player]
     return ia.action(game.to_dict())
-
-def GetNextPosition(num_player : int, IAs : list, game: Game):
-    ia = IAs[num_player]
-    return ia.chooseNextPosition()
-
-def get_missions_proches(num_player : int, IAs : list, game: Game):
-    ia = IAs[num_player]
-    return ia.get_mission_distance()
 
 ##############################################################################
 # Fonctions Logiques des règles du jeu
@@ -145,7 +109,7 @@ def update_cooldowns(missions : list):
 
 
 def resolve_action(num_player : int, action : str, game : Game):
-    """Résout l'action du joueur. Renvoie True si l'action est réalisable et False sinon.
+    """Résout l'action du joueur. Renvoie l'action si l'action est réalisable et 'P' sinon
 
     Args:
         num_player (int): numéro du joueur
@@ -163,7 +127,7 @@ def resolve_action(num_player : int, action : str, game : Game):
             coder.position = (x+dx,y+dy)
             if RAPPORT:
                 print("Coder", num_player, "se déplace en",x+dx,y+dy)      
-            return True
+            return action
 
     if action == 'L' and coder.level < MAX_LEVEL and coder.position==JC:
         coût = (coder.level+1)**2 * COST_UPGRADE
@@ -172,20 +136,21 @@ def resolve_action(num_player : int, action : str, game : Game):
             coder.level += 1
             if RAPPORT:
                 print("Coder", num_player, "augmente son level à",coder.level)
-                input()   
-            return True
+                #input()   
+            return 'L'
 
-    if action == 'E' and coder.max_energy < MAX_LEVEL and coder.position==JC:
+    if action == 'EM' and coder.max_energy < MAX_LEVEL and coder.position==JC:
         coût = (coder.max_energy+1)**2 * COST_UPGRADE
         if coder.bitcoins >= coût:
             coder.bitcoins -= coût
             coder.max_energy += 1
             if RAPPORT:
                 print("Coder", num_player, "augmente son énergie max à",coder.max_energy)
-                input()  
-            return True
-        
-    return False
+                #input()  
+            return 'EM'
+
+
+    return 'P'
     
 
 
@@ -281,27 +246,24 @@ def partie(player_names : list, missions_file : str):
     IAs = load_IAs(player_names, game)
     game_over = False
     num_current_player = 0
+
     if RAPPORT:
         print("Début de partie avec", nb_players, "coders")
         print("nom des IAs :", player_names)
 
     history = [game.to_dict()]
 
+    
     while not game_over:
         if RAPPORT:
             print("\n"+"*"* 20 + "\nDébut tour", len(history), "codeur :", num_current_player)
             print(game.to_dict())
         update_cooldowns(missions)
-
         action = get_player_action(num_current_player, IAs, game)
-        liste_mission_plus_proche = get_missions_proches(num_current_player, IAs, game)
-        print(GetNextPosition(num_current_player, IAs, game))
-        print(liste_mission_plus_proche)
-
         if RAPPORT:
             print("Action choisie", action)
-        game.actions.append(action)
-        resolve_action(num_current_player, action, game)
+        resultat = resolve_action(num_current_player, action, game)
+        game.actions.append(resultat)
         end_turn(num_current_player, game)
         x,y = game.coders[num_current_player].position
         
@@ -316,6 +278,5 @@ def partie(player_names : list, missions_file : str):
         print("Scores de fin de partie")
         for i in range(nb_players):
             print("Coder",i,":",game.coders[i].bitcoins)
-        
 
         
