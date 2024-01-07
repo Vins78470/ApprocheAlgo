@@ -11,7 +11,7 @@ JC = (10,10)
 SIZE = 21
 MAX_LEVEL = 10
 OBJECTIVE = 3000
-DURATION = 100
+DURATION = 1000
 COST_UPGRADE = 25
 COOLDOWN_FACTOR = 10
 
@@ -196,14 +196,14 @@ def work_on_mission(coder : Coder, mission : Mission):
     mission.workload = max(0, mission.workload - coder.level)
     if RAPPORT:
         print("Le coder travaille sur une mission, son énergie passe à", coder.energy, "le workload passe à", mission.workload)
-        input()
+        #input()
     if mission.workload == 0:
         mission.cooldown = mission.difficulty * COOLDOWN_FACTOR
         coder.bitcoins += (mission.difficulty * mission.starting_workload)**2
         if RAPPORT:
             print("La mission est terminée, elle a un cooldown de", mission.cooldown)
             print("Le codeur a maintenant", coder.bitcoins,"bitcoins")
-            input()
+            #input()
 
 
 def check_endgame(game : Game) -> bool:

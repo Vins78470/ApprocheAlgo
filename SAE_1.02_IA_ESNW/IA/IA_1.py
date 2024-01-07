@@ -53,11 +53,7 @@ class IA_ESNW:
                 print("La mission la plus proche est la est la :", cle)
                 break  # Arrêter la recherche une fois la clé trouvée
     
-    def GetPosition():
-        for key,value in  
-        # Calcul du décalage en soustrayant les coordonnées de la mission par rapport à celles du joueur
-        decalage_x = position_mission[0] - position_joueur[0]
-        decalage_y = position_mission[1] - position_joueur[1]
+  
 
     def GetClosestPos():
         pass
