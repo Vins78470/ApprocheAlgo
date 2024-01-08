@@ -8,6 +8,8 @@
 import math
 import random
 
+from moteur_esn_wars import COST_UPGRADE
+
 
 DIRECTIONS = {'N':(0,-1), 'S':(0,1), 'E':(1,0), 'W':(-1,0)}
 class IA_ESNW:
@@ -42,7 +44,8 @@ class IA_ESNW:
             
             for mission in self.game_dic['missions']:
                 mission_x,mission_y = mission['position']
-                self.liste_distance.append(math.sqrt((mission_x - joueur_x)**2 + (mission_y - joueur_y)**2))
+                #self.liste_distance.append((mission_x - joueur_x) + (mission_y - joueur_y)) #distance de manhattan 
+                self.liste_distance.append(math.sqrt((mission_x - joueur_x)**2 + (mission_y - joueur_y)**2)) # Distance euclidienne
     
     def ChoisisMissionLaPlusProche(self):
         meilleur_mission = min(self.liste_distance)
@@ -86,6 +89,30 @@ class IA_ESNW:
       if self.game_dic['coders'][self.mon_numero]['energy']<= 0:
           return True
     
+
+
+    def ArgentEstDisponible(self):
+        argent_dispo = self.game_dic['coders'][self.mon_numero]['bitcoins']
+        max_energy = self.game_dic['coders'][self.mon_numero]['max_energy']
+        argent_dispo = self.game_dic['coders'][self.mon_numero]['bitcoins']
+        level = self.game_dic['coders'][self.mon_numero]['level']
+
+        return argent_dispo >= ((level+1)**2)* COST_UPGRADE or argent_dispo >= ((max_energy+1)**2)* COST_UPGRADE
+    
+    def ArgentEstDisponiblePourLevel(self):
+
+        argent_dispo = self.game_dic['coders'][self.mon_numero]['bitcoins']
+        level = self.game_dic['coders'][self.mon_numero]['level']
+
+        return argent_dispo >= ((level+1)**2)* COST_UPGRADE 
+    
+    def ArgentEstDisponiblePourEM(self):
+
+        argent_dispo = self.game_dic['coders'][self.mon_numero]['bitcoins']
+        max_energy = self.game_dic['coders'][self.mon_numero]['max_energy']
+
+        return argent_dispo >= ((max_energy+1)**2)* COST_UPGRADE
+
     def RetournerAuJobCenter(self):
         job_center_position = (10, 10)  # Position du job center (à adapter)
         return self.DeplacerCoder(job_center_position)
@@ -120,13 +147,22 @@ class IA_ESNW:
 
         return direction_tuple
 
-
+    # mt = montant total de toutes les missions
+    # dt = distances totals de toutes les missions
+    # et =  energie necessaire de toutes les missions
+    # Pour une mission donnée je calcule 
+    # note entre 0 et 1 : (mi / mt) * (1 - (di/dt)) * (1 - ei/et)
+    # moyenne ponderé avec un facteur entre 0 et 1 exemple : 0.6 * m + 0.3*d + 0.1*e 
+    #note entre 0 et 1 : faire une moyenne entre les facteurs et divisé par 3.
+    
+   
+    
     def CalculMissionLaPlusRentable(self):
 
         self.liste_rendement_global = []
 
         for i in range(len(self.liste_rendement)):
-            self.liste_rendement_global.append(self.liste_rendement[i] - self.liste_distance[i])
+            self.liste_rendement_global.append(self.liste_rendement[i] * self.liste_distance[i])
             
         print(self.liste_rendement_global)
         return self.liste_rendement_global.index(max(self.liste_rendement_global)) # On retourne la mission qui est la moins couteuse et la plus proche.
@@ -141,7 +177,7 @@ class IA_ESNW:
             energie_coder = self.game_dic['coders'][self.mon_numero]['energy']
         
             # Ajouter une petite valeur à l'énergie nécessaire si elle est nulle
-            energie_necessaire = max(1, energie_coder - difficulte)
+            energie_necessaire =  difficulte
             
             gain_potentiel = (remaining_workload * difficulte)**2
             self.liste_rendement.append(gain_potentiel / energie_necessaire)
@@ -153,17 +189,8 @@ class IA_ESNW:
         return x_mission, y_mission
 
     def EstSurLeJC(self):
-       return self.game_dic['coders'][self.mon_numero]['position'] == (10,10)
 
-    def CalculRoundNecessairePourFinirMission(self,best_mission_index):
-        
-
-        self.liste_upgrade_energy_max.append(self.ScoreEnergyMax(best_mission_index))
-        self.liste_upgrade_coding_level.append(self.ScoreCodingLevel(best_mission_index))
-        self.liste_meilleur_upgrade = max(len(self.liste_upgrade_energy_max ),len(self.liste_upgrade_coding_level))
-
-        print(self.liste_meilleur_upgrade)
-
+         return self.game_dic['coders'][self.mon_numero]['position'] == (10,10)
 
     def ScoreEnergyMax(self,best_mission_index):
          
@@ -184,20 +211,29 @@ class IA_ESNW:
         return self.distance_theorique_coding_level
 
     def ChoixUpgrade(self,best_mission_index):
-        coder = self.game_dic['coders'][self.mon_numero]
-        level_cost = self.game_dic['coders'][self.mon_numero]['level'] ** 2 
-        energy_cost = (self.game_dic['coders'][self.mon_numero]['max_energy'] + 1) ** 2 
 
+        workload = self.game_dic['missions'][best_mission_index]['starting_workload']
+        difficulte = self.game_dic['missions'][best_mission_index]['difficulty']
+        gain = (workload * difficulte)**2
+
+        level_cost = ((self.game_dic['coders'][self.mon_numero]['level'] + 1) ** 2) * COST_UPGRADE
+        energy_cost = ((self.game_dic['coders'][self.mon_numero]['max_energy'] + 1) ** 2) * COST_UPGRADE
+
+        print(self.ScoreEnergyMax(best_mission_index))
+        print(self.ScoreCodingLevel(best_mission_index))
         # Score pour l'amélioration du niveau de codage
-        energy_score = level_cost/self.ScoreEnergyMax(best_mission_index)
+        energy_score = (gain - level_cost)/self.ScoreEnergyMax(best_mission_index)
      
         # Score pour l'amélioration de l'énergie
-        level_score = energy_cost/self.ScoreCodingLevel(best_mission_index)
+        level_score = (gain - energy_cost)/self.ScoreCodingLevel(best_mission_index)
 
-        if level_score >= energy_score:
+        print(level_score)
+        print(energy_score)
+        if 0<=level_score >= energy_score and self.ArgentEstDisponiblePourLevel() :
             return 'L'
-        else:
+        elif 0<=energy_score >= level_score and self.ArgentEstDisponiblePourEM():
             return 'EM'
+        
 
     
     def action(self, game_dict : dict) -> str:
@@ -227,16 +263,18 @@ class IA_ESNW:
         # Donne la lettre du prochain coup 
         key = self.GetProchainCoup(direction_tuple)
         
-
+        # Si l'energie est NULL Le joueur doit retourner au job center. 
         if self.checkEnergyNull():
             print("Vous n'avez plus d'energie retour au job center")
             direction_tuple = self.RetournerAuJobCenter()
             key = self.GetProchainCoup(direction_tuple)
         
-        if self.EstSurLeJC():
-            self.CalculRoundNecessairePourFinirMission(index_mission_la_plus_rentable)
-            self.ChoixUpgrade(index_mission_la_plus_rentable)
+        # Si le joueur est sur le JC il doit faire une upgrade s'il a l'argent disponible. 
         
+        #if self.EstSurLeJC() and self.ArgentEstDisponible():
+           # return random.choice(['EM', 'L'])
+          #key = self.ChoixUpgrade(index_mission_la_plus_rentable) # Le choix de l'upgrade se fait en fonction de la mission la plus rentable et du nombre de tour que l'upgrade prend pour la finir.
+
         return key
         
     
