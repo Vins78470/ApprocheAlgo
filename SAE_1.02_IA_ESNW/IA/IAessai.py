@@ -37,11 +37,11 @@ class IA_ESNW:
         récompense_maximum = float('-inf')
 
         for mission in self.dictionnaire["missions"]:
-            """if mission["cooldown"] == 0:
+            if mission["cooldown"] == 0:
                 récompense = (mission['starting_workload'] * mission["difficulty"])
                 if récompense > récompense_maximum:
                     récompense_maximum = récompense
-                    mission_intéressante = mission"""
+                    mission_intéressante = mission
 
         return mission_intéressante
     

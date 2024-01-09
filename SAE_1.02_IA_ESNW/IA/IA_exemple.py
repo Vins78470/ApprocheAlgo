@@ -33,6 +33,10 @@ class IA_ESNW:
         self.distance_theorique_coding_level =0
         self.liste_upgrade_energy_max  = []
         self.liste_upgrade_coding_level = []
+        self.liste_montant_total = []   # mt = montant total de toutes les missions
+        self.liste_distance_total = []  # dt = distances totals de toutes les missions
+        self.liste_energie_total = []   # et =  energie necessaire de toutes les missions
+        self.liste_de_note = []
 
     def getInfoJoueur(self):
         print("Infos joueur : " +str(self.mon_numero) + str(self.game_dic['coders'][self.mon_numero]))
@@ -44,8 +48,8 @@ class IA_ESNW:
             
             for mission in self.game_dic['missions']:
                 mission_x,mission_y = mission['position']
-                #self.liste_distance.append((mission_x - joueur_x) + (mission_y - joueur_y)) #distance de manhattan 
-                self.liste_distance.append(math.sqrt((mission_x - joueur_x)**2 + (mission_y - joueur_y)**2)) # Distance euclidienne
+                self.liste_distance.append((mission_x - joueur_x) + (mission_y - joueur_y)) #distance de manhattan 
+                #self.liste_distance.append(math.sqrt((mission_x - joueur_x)**2 + (mission_y - joueur_y)**2)) # Distance euclidienne
     
     def ChoisisMissionLaPlusProche(self):
         meilleur_mission = min(self.liste_distance)
@@ -151,21 +155,47 @@ class IA_ESNW:
     # dt = distances totals de toutes les missions
     # et =  energie necessaire de toutes les missions
     # Pour une mission donnée je calcule 
-    # note entre 0 et 1 : (mi / mt) * (1 - (di/dt)) * (1 - ei/et)
-    # moyenne ponderé avec un facteur entre 0 et 1 exemple : 0.6 * m + 0.3*d + 0.1*e 
-    #note entre 0 et 1 : faire une moyenne entre les facteurs et divisé par 3.
+    # 1/ note entre 0 et 1 : (mi / mt) * (1 - (di/dt)) * (1 - ei/et)
+    # 2/ moyenne ponderé avec un facteur entre 0 et 1 exemple : 0.6 * m + 0.3*d + 0.1*e 
+    # 3/ note entre 0 et 1 : faire une moyenne entre les facteurs et divisé par 3.
     
-   
-    
+    def CalculMontantTotalMission(self):
+        self.liste_montant_total = []
+        for mission in self.game_dic['missions']:
+            starting_workload = mission['starting_workload']
+            difficulte = mission['difficulty']
+            gain = (starting_workload * difficulte)**2
+            self.liste_montant_total.append(gain)
+        print("Liste montants totals : " + str(self.liste_montant_total))
+
+    def CalculDistanceTotalDesMissions(self):
+        self.liste_distance_total = []
+        position_joueur_actuelle = self.game_dic['coders'][self.mon_numero]['position']
+        joueur_x,joueur_y = position_joueur_actuelle
+        for mission in self.game_dic['missions']:
+            mission_x,mission_y = mission['position']
+            self.liste_distance_total.append(abs(mission_x - joueur_x) + abs(mission_y - joueur_y)) #distance de manhattan
+        print("Liste distances totales : " + str(self.liste_distance_total))
+        
+    def CalculEnergieTotalNécessaire(self):
+        self.liste_energie_total = []
+        for mission in self.game_dic['missions']:
+            energy_necessaire = mission['difficulty']
+            self.liste_energie_total.append(energy_necessaire)
+        print("Liste energies totales nécessaires : " + str(self.liste_energie_total))
+
+    def CalculNote(self):
+        self.liste_de_note = []
+
+        for i in range (len(self.liste_energie_total)):
+            note = (self.liste_energie_total[i]/sum(self.liste_energie_total)) *(1 - (self.liste_distance_total[i]/sum(self.liste_distance_total)))*(1 - (self.liste_montant_total[i]/sum(self.liste_montant_total)))
+            self.liste_de_note.append(note)
+        print(self.liste_de_note)
+
+
     def CalculMissionLaPlusRentable(self):
-
-        self.liste_rendement_global = []
-
-        for i in range(len(self.liste_rendement)):
-            self.liste_rendement_global.append(self.liste_rendement[i] * self.liste_distance[i])
-            
-        print(self.liste_rendement_global)
-        return self.liste_rendement_global.index(max(self.liste_rendement_global)) # On retourne la mission qui est la moins couteuse et la plus proche.
+        
+        return self.liste_de_note.index(max(self.liste_de_note)) # On retourne la mission qui est la moins couteuse et la plus proche.
 
 
     def CalculMissionLaMoinsCouteuse(self):
@@ -219,20 +249,29 @@ class IA_ESNW:
         level_cost = ((self.game_dic['coders'][self.mon_numero]['level'] + 1) ** 2) * COST_UPGRADE
         energy_cost = ((self.game_dic['coders'][self.mon_numero]['max_energy'] + 1) ** 2) * COST_UPGRADE
 
-        print(self.ScoreEnergyMax(best_mission_index))
-        print(self.ScoreCodingLevel(best_mission_index))
+
         # Score pour l'amélioration du niveau de codage
-        energy_score = (gain - level_cost)/self.ScoreEnergyMax(best_mission_index)
+        energy_score = (gain - level_cost)
      
         # Score pour l'amélioration de l'énergie
-        level_score = (gain - energy_cost)/self.ScoreCodingLevel(best_mission_index)
+        level_score = (gain - energy_cost) 
 
-        print(level_score)
         print(energy_score)
-        if 0<=level_score >= energy_score and self.ArgentEstDisponiblePourLevel() :
+        print(level_score)
+        
+
+        if level_score >= energy_score and self.ArgentEstDisponiblePourLevel():
             return 'L'
-        elif 0<=energy_score >= level_score and self.ArgentEstDisponiblePourEM():
+        elif energy_score >= level_score and self.ArgentEstDisponiblePourEM():
             return 'EM'
+        elif not self.ArgentEstDisponiblePourLevel() and not self.ArgentEstDisponiblePourEM():
+            return 'P'  # Action alternative si l'argent est insuffisant pour les améliorations
+        elif not self.ArgentEstDisponiblePourLevel():
+            return 'EM'  # Action alternative si l'argent est insuffisant pour améliorer le niveau de codage
+        elif not self.ArgentEstDisponiblePourEM():
+            return 'L'  # Action alternative si l'argent est insuffisant pour améliorer l'énergie maximale
+            
+        
         
 
     
@@ -245,12 +284,15 @@ class IA_ESNW:
         Returns:
             str : une action 'N', 'S', 'E', 'W', 'L', 'EM', 'P'
         """
+        self.CalculMontantTotalMission()
+        self.CalculDistanceTotalDesMissions()
+        self.CalculEnergieTotalNécessaire()
+       
+        self.CalculNote()
+        #self.CalculDistanceEntreJoueurEtMissions() # rempli la liste de distances entre les joueurs et les missions
+        #self.CalculMissionLaMoinsCouteuse() # rempli la liste de rendements par rapport a le gain / le cout
 
-        self.CalculDistanceEntreJoueurEtMissions() # rempli la liste de distances entre les joueurs et les missions
-
-        self.CalculMissionLaMoinsCouteuse() # rempli la liste de rendements par rapport a le gain / le cout
-
-        # renvoi l'index de la mission qui a la meilleur difference entre rendements moins couteux et distance la plus proche
+        # renvoi l'index de la mission qui a la meilleur note
         index_mission_la_plus_rentable = self.CalculMissionLaPlusRentable()
         
         # renvoi les coordonées de la mission la plus rentable
@@ -269,12 +311,11 @@ class IA_ESNW:
             direction_tuple = self.RetournerAuJobCenter()
             key = self.GetProchainCoup(direction_tuple)
         
-        # Si le joueur est sur le JC il doit faire une upgrade s'il a l'argent disponible. 
+    # Si le joueur est sur le JC il doit faire une upgrade s'il a l'argent disponible. 
         
         #if self.EstSurLeJC() and self.ArgentEstDisponible():
-           # return random.choice(['EM', 'L'])
-          #key = self.ChoixUpgrade(index_mission_la_plus_rentable) # Le choix de l'upgrade se fait en fonction de la mission la plus rentable et du nombre de tour que l'upgrade prend pour la finir.
-
+         #   key = self.ChoixUpgrade(index_mission_la_plus_rentable) # Le choix de l'upgrade se fait en fonction de la mission la plus rentable et du nombre de tour que l'upgrade prend pour la finir.
+        
         return key
         
     

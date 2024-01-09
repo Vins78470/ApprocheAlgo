@@ -11,4 +11,4 @@ from moteur_esn_wars import partie
 #spécifiez le nom d'une map se trouvant dans le dossier map
 
 if __name__ == '__main__':
-    partie(['IA_exemple'], "map1.txt")
+    partie(['IA_exemple'], "map0.txt")
