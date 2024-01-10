@@ -3,14 +3,14 @@ import importlib
 import json
 
 #mettre à False pour arrêter l'affichage dans le terminal
-RAPPORT = False
+RAPPORT = True
 
 #variables globales constantes
 DIRECTIONS = {'N':(0,-1), 'S':(0,1), 'E':(1,0), 'W':(-1,0)}
 JC = (10,10)
 SIZE = 21
 MAX_LEVEL = 10
-OBJECTIVE = 5000
+OBJECTIVE = 3000
 DURATION = 4000
 COST_UPGRADE = 25
 COOLDOWN_FACTOR = 10

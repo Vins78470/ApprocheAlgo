@@ -32,6 +32,7 @@ class IA_ESNW:
         self.distance_missions = []  # dt = distances totals de toutes les missions
         self.energie_missions = []   # et =  energie necessaire de toutes les missions
         self.note_missions = [] 
+        self.energie_cl = []
         self.distance_theorique_energy_max = 0
         self.distance_theorique_coding_level =0
         self.liste_meilleur_upgrade = []
@@ -185,27 +186,20 @@ class IA_ESNW:
             self.energie_missions.append(energy_necessaire)
         print("Liste energies totales nécessaires : " + str(self.energie_missions))
 
-    def GainMission(self, indexMission):
+    def CalculClTotaleNécessaire(self):
+        self.energie_cl = []
+        for mission in self.game_dic['missions']:
+                cl_necessaire = mission['workload']
+                self.energie_cl.append(cl_necessaire)
+        print("Liste energies totales nécessaires : " + str(self.energie_cl))
+
+
+    def CalculNote(self):
         self.note_missions = []
 
-        for i in range (len(self.mission)):
-            note = (self.energie_missions[i]/sum(self.energie_missions)) *(1 - (self.distance_missions[i]/sum(self.distance_missions)))*(1 - (self.gain_missions[i]/sum(self.gain_missions)))
-            self.note_missions.append(note)
-        print(self.note_missions)
-
-    def CoutMission(self, indexMission):
-        self.note_missions = []
-
-        for i in range (len(self.mission)):
-            note = (self.energie_missions[i]/sum(self.energie_missions)) *(1 - (self.distance_missions[i]/sum(self.distance_missions)))*(1 - (self.gain_missions[i]/sum(self.gain_missions)))
-            self.note_missions.append(note)
-        print(self.note_missions)
-
-    def CalculNote(self, indexMission):
-        self.note_missions = []
-
-        for i in range (len(self.mission)):
-            note = (self.energie_missions[i]/sum(self.energie_missions)) *(1 - (self.distance_missions[i]/sum(self.distance_missions)))*(1 - (self.gain_missions[i]/sum(self.gain_missions)))
+        for i in range (len(self.energie_missions)):
+            note = (self.energie_cl[i]/sum(self.energie_cl))*1 - (0.1*(self.gain_missions[i]/sum(self.gain_missions)))*(1 - (self.distance_missions[i]/sum(self.distance_missions)))##*((1 - *self.energie_missions[i]/sum(self.energie_missions)))
+            
             self.note_missions.append(note)
         print(self.note_missions)
 
@@ -307,6 +301,7 @@ class IA_ESNW:
         self.CalculMontantTotalMission()
         self.CalculDistanceTotalDesMissions()
         self.CalculEnergieTotaleNécessaire()
+        self.CalculClTotaleNécessaire()
        
         self.CalculNote()
         #self.CalculDistanceEntreJoueurEtMissions() # rempli la liste de distances entre les joueurs et les missions
