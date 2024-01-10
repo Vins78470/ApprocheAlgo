@@ -198,7 +198,7 @@ class IA_ESNW:
         self.note_missions = []
 
         for i in range (len(self.energie_missions)):
-            note = (self.energie_cl[i]/sum(self.energie_cl))*1 - (0.1*(self.gain_missions[i]/sum(self.gain_missions)))*(1 - (self.distance_missions[i]/sum(self.distance_missions)))##*((1 - *self.energie_missions[i]/sum(self.energie_missions)))
+            note = (self.gain_missions[i]/sum(self.gain_missions))*((self.distance_missions[i]/sum(self.distance_missions)))#*(1 - (self.energie_cl[i]/sum(self.energie_cl)))*(1 - (self.energie_missions[i]/sum(self.energie_missions)))#(1 - (0.1*(self.gain_missions[i]/sum(self.gain_missions))))
             
             self.note_missions.append(note)
         print(self.note_missions)
@@ -206,7 +206,7 @@ class IA_ESNW:
 
     def CalculMissionLaPlusRentable(self):
         
-        return self.note_missions.index(max(self.note_missions)) # On retourne la mission qui est la moins couteuse et la plus proche.
+        return self.note_missions.index(max(self.note_missions)) # On retourne la mission qui est la plus rentable.
 
 
     def CalculMissionLaMoinsCouteuse(self):
@@ -222,7 +222,9 @@ class IA_ESNW:
             
             gain_potentiel = (remaining_workload * difficulte)**2
             self.rendement_missions.append(gain_potentiel / energie_necessaire)
-    
+
+    def GetIndexMissionLaMoinsCouteuse(self):
+        return  self.rendement_missions.index(max(self.rendement_missions))
 
     def GetCoordonéesMeilleurMission(self,best_mission_index):
         best_mission = self.game_dic['missions'][best_mission_index]
@@ -270,9 +272,6 @@ class IA_ESNW:
         # Score pour l'amélioration de l'énergie
         level_score = (gain - energy_cost) 
 
-        print(energy_score)
-        print(level_score)
-        
 
         if level_score >= energy_score and self.ArgentEstDisponiblePourLevel() and coding_level <= 7:
             return 'L'
@@ -303,12 +302,14 @@ class IA_ESNW:
         self.CalculEnergieTotaleNécessaire()
         self.CalculClTotaleNécessaire()
        
-        self.CalculNote()
+        self.CalculMissionLaMoinsCouteuse()
+        index_mission_la_plus_rentable = self.GetIndexMissionLaMoinsCouteuse()
+        #self.CalculNote()
         #self.CalculDistanceEntreJoueurEtMissions() # rempli la liste de distances entre les joueurs et les missions
         #self.CalculMissionLaMoinsCouteuse() # rempli la liste de rendements par rapport a le gain / le cout
 
         # renvoi l'index de la mission qui a la meilleur note
-        index_mission_la_plus_rentable = self.CalculMissionLaPlusRentable()
+        #index_mission_la_plus_rentable = self.CalculMissionLaPlusRentable()
         
         # renvoi les coordonées de la mission la plus rentable
         x,y = self.GetCoordonéesMeilleurMission(index_mission_la_plus_rentable)
